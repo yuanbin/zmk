@@ -19,6 +19,8 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #define HID_KEY_USAGE_PAGE 0x70000
 
+int8_t total_recorded_actions = 0;
+
 struct behavior_dynamic_macro_bind {
     uint32_t wait_ms;
     bool pressed;
@@ -109,6 +111,9 @@ static int on_dynamic_macro_binding_pressed(struct zmk_behavior_binding *binding
                 return ZMK_BEHAVIOR_OPAQUE;
             }
             LOG_DBG("Recording new macro: %d", event.position);
+            if (macro) {
+                total_recorded_actions -= macro->count;
+            }
             macro->count = 0;
         } else {
             struct recording_macro *macro;
@@ -146,7 +151,7 @@ static int dynamic_macro_keycode_state_changed_listener(const zmk_event_t *eh) {
 
     for (int i = 0; i < ZMK_BHV_RECORDING_MACRO_MAX; i++) {
         struct recording_macro *macro = &recording_macros[i];
-        if (macro->recording && macro->count < CONFIG_ZMK_DYNAMIC_MACRO_MAX_ACTIONS) {
+        if (macro->recording && total_recorded_actions < CONFIG_ZMK_DYNAMIC_MACRO_MAX_ACTIONS) {
             uint32_t eventTime = k_uptime_get();
             uint32_t elapsedTime = eventTime - macro->state->lastEventTime;
             macro->state->lastEventTime = eventTime;
@@ -163,7 +168,8 @@ static int dynamic_macro_keycode_state_changed_listener(const zmk_event_t *eh) {
                 macro->state->bindings[macro->count - 1].wait_ms = elapsedTime;
             }
 
-            macro->count += 1;
+            macro->count++;
+            total_recorded_actions++;
         }
     }
     return ZMK_EV_EVENT_BUBBLE;
