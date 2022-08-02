@@ -170,6 +170,10 @@ static int dynamic_macro_keycode_state_changed_listener(const zmk_event_t *eh) {
 
             macro->count++;
             total_recorded_actions++;
+        } else if (total_recorded_actions >= CONFIG_ZMK_DYNAMIC_MACRO_MAX_ACTIONS) {
+            LOG_ERR(
+                "Action not recorded, not enough space, CONFIG_ZMK_DYNAMIC_MACRO_MAX_ACTIONS %d",
+                CONFIG_ZMK_DYNAMIC_MACRO_MAX_ACTIONS);
         }
     }
     return ZMK_EV_EVENT_BUBBLE;
