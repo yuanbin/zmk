@@ -12,3 +12,5 @@ properties:
     type: int
     default: -1
     description: The default time to wait (in milliseconds) before triggering the next behavior in the macro bindings list.
+  no-output:
+    type: boolean

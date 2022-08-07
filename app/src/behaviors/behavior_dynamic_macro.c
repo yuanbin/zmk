@@ -36,6 +36,7 @@ struct behavior_dynamic_macro_state {
 
 struct behavior_dynamic_macro_config {
     uint32_t wait_ms;
+    bool no_output;
 };
 
 #define ZMK_BHV_RECORDING_MACRO_MAX 10
@@ -98,8 +99,12 @@ static int on_dynamic_macro_binding_pressed(struct zmk_behavior_binding *binding
     struct behavior_dynamic_macro_state *state = dev->data;
 
     if (binding->param1 == PLAY) {
-        LOG_DBG("Playing Dynamic Macro");
-        queue_dynamic_macro(event.position, cfg->wait_ms, state);
+        if (state->recording) {
+            LOG_ERR("Macro is currently recording, can't play");
+        } else {
+            LOG_DBG("Playing Dynamic Macro");
+            queue_dynamic_macro(event.position, cfg->wait_ms, state);
+        }
     } else if (binding->param1 == RECORD) {
         state->recording = !state->recording;
         LOG_DBG("Recording Status: %d", state->recording);
@@ -170,10 +175,19 @@ static int dynamic_macro_keycode_state_changed_listener(const zmk_event_t *eh) {
 
             macro->count++;
             total_recorded_actions++;
+
+            if (macro->config->no_output) {
+                return ZMK_EV_EVENT_HANDLED;
+            }
+            return ZMK_EV_EVENT_BUBBLE;
         } else if (total_recorded_actions >= CONFIG_ZMK_DYNAMIC_MACRO_MAX_ACTIONS) {
             LOG_ERR(
                 "Action not recorded, not enough space, CONFIG_ZMK_DYNAMIC_MACRO_MAX_ACTIONS %d",
                 CONFIG_ZMK_DYNAMIC_MACRO_MAX_ACTIONS);
+            if (macro->config->no_output) {
+                return ZMK_EV_EVENT_HANDLED;
+            }
+            return ZMK_EV_EVENT_BUBBLE;
         }
     }
     return ZMK_EV_EVENT_BUBBLE;
@@ -183,7 +197,7 @@ static int dynamic_macro_keycode_state_changed_listener(const zmk_event_t *eh) {
     static struct behavior_dynamic_macro_state behavior_dynamic_macro_state_##n = {                \
         .recording = false, .count = 0};                                                           \
     static struct behavior_dynamic_macro_config behavior_dynamic_macro_config_##n = {              \
-        .wait_ms = DT_INST_PROP_OR(n, wait_ms, -1)};                                               \
+        .wait_ms = DT_INST_PROP_OR(n, wait_ms, -1), .no_output = DT_INST_PROP(n, no_output)};      \
     DEVICE_DT_INST_DEFINE(n, behavior_dynamic_macro_init, NULL, &behavior_dynamic_macro_state_##n, \
                           &behavior_dynamic_macro_config_##n, APPLICATION,                         \
                           CONFIG_KERNEL_INIT_PRIORITY_DEFAULT,                                     \
