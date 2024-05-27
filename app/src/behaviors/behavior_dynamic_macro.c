@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2022 The ZMK Contributors
  *
@@ -177,7 +178,7 @@ static int dynamic_macro_keycode_state_changed_listener(const zmk_event_t *eh) {
             } else {
                 macro->state->bindings[macro->count].pressed = false;
             }
-            macro->state->bindings[macro->count].binding.behavior_dev = "KEY_PRESS";
+            macro->state->bindings[macro->count].binding.behavior_dev = "key_press";
             macro->state->bindings[macro->count].binding.param1 = HID_KEY_USAGE_PAGE + ev->keycode;
             macro->state->bindings[macro->count].binding.param2 = 0;
 
